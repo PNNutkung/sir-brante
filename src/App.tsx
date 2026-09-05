@@ -1,58 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Language } from './types/game';
 import { useGameEngine } from './hooks/useGameEngine';
 import { Toolbar } from './components/Toolbar';
-import { VariantA } from './components/VariantA';
-import { VariantB } from './components/VariantB';
-import { VariantC } from './components/VariantC';
-import { PrototypeSwitcher, type PrototypeVariant } from './components/PrototypeSwitcher';
+import { CharacterPanel } from './components/CharacterPanel';
+import { FlagPanel } from './components/FlagPanel';
+import { StatsPanel } from './components/StatsPanel';
+import { EventTimeline } from './components/EventTimeline';
 import { translate } from './i18n/translate';
 import { getEventByIndex } from './engine/calculator';
 import './App.css';
 
-const VARIANTS: PrototypeVariant[] = [
-  {
-    id: 'A',
-    name: 'Classic 3-Column',
-    description: 'Faithful reproduction of WPF desktop GUI layout (Characters/Flags left, Events center, Stats right).',
-  },
-  {
-    id: 'B',
-    name: 'Grimoire / Two-Page Tome',
-    description: 'Book-style narrative: Story on the left page, interactive Ledger with tabbed stats on the right.',
-  },
-  {
-    id: 'C',
-    name: 'Focused Stepper & Vitals',
-    description: 'Single-event focus stage, top vitals HUD, collapsible history drawer, and compact side dossier.',
-  },
-];
-
 function App() {
   const [lang, setLang] = useState<Language>('English');
   const { engine, choose, reset } = useGameEngine();
-
-  // Read variant from URL search param (?variant=A/B/C)
-  const [variant, setVariant] = useState<string>(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('variant') || 'A';
-  });
-
-  const handleVariantChange = (newV: string) => {
-    setVariant(newV);
-    const url = new URL(window.location.href);
-    url.searchParams.set('variant', newV);
-    window.history.replaceState({}, '', url.toString());
-  };
-
-  useEffect(() => {
-    const onPopState = () => {
-      const p = new URLSearchParams(window.location.search);
-      setVariant(p.get('variant') || 'A');
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
 
   const handleSave = () => {
     const lines: string[] = [];
@@ -89,17 +49,18 @@ function App() {
         onSave={handleSave}
       />
 
-      <main className="variant-stage">
-        {variant === 'A' && <VariantA engine={engine} lang={lang} onChoose={choose} />}
-        {variant === 'B' && <VariantB engine={engine} lang={lang} onChoose={choose} />}
-        {variant === 'C' && <VariantC engine={engine} lang={lang} onChoose={choose} />}
+      <main className="main-layout">
+        <div className="left-column">
+          <CharacterPanel state={engine.gameState} lang={lang} />
+          <FlagPanel state={engine.gameState} lang={lang} />
+        </div>
+        <div className="center-column">
+          <EventTimeline engine={engine} lang={lang} onChoose={choose} />
+        </div>
+        <div className="right-column">
+          <StatsPanel state={engine.gameState} lang={lang} />
+        </div>
       </main>
-
-      <PrototypeSwitcher
-        variants={VARIANTS}
-        current={variant}
-        onChange={handleVariantChange}
-      />
     </div>
   );
 }
