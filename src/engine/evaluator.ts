@@ -1,4 +1,7 @@
 import type { GameState } from '../types/game';
+import gameData from '../data/game-data.json';
+
+const statusMap: Record<string, string> = gameData.statuses;
 
 // Safe evaluator for the limited C#-derived expression grammar.
 // Supports: && || ! == != > >= < <= , stat/char/flag identifiers,
@@ -148,8 +151,14 @@ function resolvePath(parts: string[], state: GameState): any {
   // CharacterName -> path continues: CharacterName.status / CharacterName.relations (rare) — but comparisons handled at Cmp level
   // FlagName -> state.flags[name]
   // EventVarName.HasPassed -> state.passedEvents[name]
+  // Status.XYZ -> symbolic status constant; resolves to the same raw status key
+  //   that applyConsequence() stores via statusMap[sid] ?? sid, so comparisons
+  //   against character.status agree with how statuses are actually written.
   if (parts.length === 2 && parts[1] === 'HasPassed') {
     return !!state.passedEvents[parts[0]];
+  }
+  if (parts.length === 2 && parts[0] === 'Status') {
+    return statusMap[parts[1]] ?? parts[1];
   }
   if (parts[0] in state.stats) {
     return state.stats[parts[0]];
