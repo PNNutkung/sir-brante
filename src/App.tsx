@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import type { Language } from './types/game';
 import { useGameEngine } from './hooks/useGameEngine';
 import { Toolbar } from './components/Toolbar';
@@ -10,9 +10,33 @@ import { translate } from './i18n/translate';
 import { getEventByIndex } from './engine/calculator';
 import './App.css';
 
+const StoryGraphPrototype = lazy(() =>
+  import('./prototype/story-graph/StoryGraphPrototype').then((m) => ({ default: m.StoryGraphPrototype }))
+);
+
 function App() {
   const [lang, setLang] = useState<Language>('English');
   const { engine, choose, reset } = useGameEngine();
+
+  const [showPrototype, setShowPrototype] = useState(
+    () => new URLSearchParams(window.location.search).get('prototype') === 'story-graph'
+  );
+
+  useEffect(() => {
+    const onPop = () => {
+      setShowPrototype(new URLSearchParams(window.location.search).get('prototype') === 'story-graph');
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  if (showPrototype) {
+    return (
+      <Suspense fallback={null}>
+        <StoryGraphPrototype />
+      </Suspense>
+    );
+  }
 
   const handleSave = () => {
     const lines: string[] = [];
